@@ -2,6 +2,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export async function POST(req: Request) {
     const { email, password } = await req.json();
@@ -31,6 +34,12 @@ export async function POST(req: Request) {
         );
     }
 
-    // Aquí puedes usar cookies o JWT si quieres mantener sesión
-    return NextResponse.json({ message: "Login exitoso" });
+    // Generar token JWT
+    const token = jwt.sign(
+        { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+    );
+
+    return NextResponse.json({ message: "Login exitoso", token });
 }

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+// import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 const loginSchema = z.object({
   email: z.string().email("Correo inválido"),
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  // No se usa useAuthRedirect aquí para evitar redirección automática en login
   const {
     register,
     handleSubmit,
@@ -34,10 +36,14 @@ export default function LoginPage() {
       body: JSON.stringify(data),
     });
 
-    if (res.ok) {
-      router.push("/dashboard");
+    const json = await res.json();
+    if (res.ok && json.token) {
+      localStorage.setItem("token", json.token);
+      // Espera a que el token se guarde antes de redirigir
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 100);
     } else {
-      const json = await res.json();
       setError(json.message || "Error al iniciar sesión");
     }
   };
