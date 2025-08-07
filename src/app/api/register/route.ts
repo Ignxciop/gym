@@ -1,3 +1,6 @@
+// src/app/api/register/route.ts
+// Endpoint API para registrar un nuevo usuario.
+// Valida datos, verifica duplicados, hashea la contraseña y guarda el usuario en la base de datos.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
@@ -21,10 +24,10 @@ export async function POST(req: Request) {
         );
     }
 
-    // Hashear la contraseña
+    // Hashear la contraseña antes de guardar
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear el usuario
+    // Crear el usuario en la base de datos
     const user = await prisma.user.create({
         data: {
             name,

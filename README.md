@@ -10,7 +10,7 @@ Desarrollada con **Next.js**, **TypeScript**, **PostgreSQL** y **Prisma**.
 - 🗓 Registro y gestión de rutinas semanales personalizadas
 - 📊 Seguimiento de progresos: peso, repeticiones, cargas y medidas corporales
 - 🏋️ Registro de ejercicios realizados y comparación con sesiones anteriores
-- 🧠 Autenticación segura _(próximamente)_
+- 🧠 Autenticación segura
 - 📈 Dashboard visual con estadísticas
 
 ---

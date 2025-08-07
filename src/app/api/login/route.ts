@@ -1,4 +1,6 @@
-// app/api/login/route.ts
+// src/app/api/login/route.ts
+// Endpoint API para login de usuario.
+// Valida credenciales, compara contraseña, y genera un token JWT si es correcto.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
@@ -16,6 +18,7 @@ export async function POST(req: Request) {
         );
     }
 
+    // Busca el usuario por email
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -25,6 +28,15 @@ export async function POST(req: Request) {
         );
     }
 
+    // Validar que el usuario esté activo
+    if (!user.status) {
+        return NextResponse.json(
+            { message: "Usuario inhabilitado. Contacta al administrador." },
+            { status: 403 }
+        );
+    }
+
+    // Compara la contraseña hasheada
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
@@ -34,7 +46,7 @@ export async function POST(req: Request) {
         );
     }
 
-    // Generar token JWT
+    // Genera el token JWT con los datos principales del usuario
     const token = jwt.sign(
         { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin },
         JWT_SECRET,

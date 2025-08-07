@@ -1,3 +1,7 @@
+// src/hooks/useAuthRedirect.tsx
+// Hook personalizado para redirigir según el estado de autenticación del usuario.
+// Si redirectIfAuth es true y hay token, redirige a /dashboard.
+// Si no hay token y redirectIfAuth es false, redirige a /.
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 

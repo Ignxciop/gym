@@ -16,7 +16,8 @@ model User {
   isAdmin    Boolean  @default(false)
   avatarUrl  String?
   gender     String?
-  status     String?
+  status     Boolean  @default(true) 
+  birthDate  DateTime? // Nueva: fecha de nacimiento para calcular edad
   userData   UserData[]
   progresses Progress[]           // Relación inversa con Progress
   routines   Routine[]            // Relación inversa con Routine
@@ -29,7 +30,6 @@ model UserData {
   userId    Int
   weight    Float
   height    Float
-  age       Int
   notes     String?
   date      DateTime @default(now())
 }

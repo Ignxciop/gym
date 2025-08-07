@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
+import dynamic from "next/dynamic";
+
+const ProfileSection = dynamic(() => import("@/app/dashboard/components/ProfileSection"), { ssr: false });
 
 const menuItems = [
     { key: "inicio", label: "Inicio", icon: "🏠" },
@@ -15,7 +19,16 @@ const menuItems = [
 export default function Dashboard() {
     const router = useRouter();
     const [active, setActive] = useState("inicio");
-    const [user, setUser] = useState<{ name: string; isAdmin: boolean } | null>(null);
+    const [user, setUser] = useState<{
+        name: string;
+        isAdmin: boolean;
+        email?: string;
+        birthDate?: string | null;
+        avatarUrl?: string | null;
+        gender?: string | null;
+    } | null>(null);
+    const [userData, setUserData] = useState<any[]>([]);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -25,7 +38,23 @@ export default function Dashboard() {
         }
         try {
             const decoded: any = jwtDecode(token);
-            setUser({ name: decoded.name || decoded.email.split("@")[0], isAdmin: !!decoded.isAdmin });
+            // Obtener datos completos del usuario (incluyendo birthDate, avatarUrl, gender)
+            fetch(`/api/userinfo?email=${decoded.email}`)
+                .then(res => res.json())
+                .then(userInfo => {
+                    setUser({
+                        name: userInfo.name || decoded.name || decoded.email.split("@")[0],
+                        isAdmin: !!userInfo.isAdmin,
+                        email: userInfo.email,
+                        birthDate: userInfo.birthDate || null,
+                        avatarUrl: userInfo.avatarUrl || "",
+                        gender: userInfo.gender || "",
+                    });
+                });
+            // Fetch real de datos físicos
+            fetch(`/api/userdata?email=${decoded.email}`)
+                .then(res => res.json())
+                .then(data => setUserData(Array.isArray(data) ? data : []));
         } catch {
             setUser(null);
             router.replace("/");
@@ -35,9 +64,14 @@ export default function Dashboard() {
     if (!user) return null;
 
     return (
-        <div className="flex min-h-screen bg-black">
+        <div className="flex min-h-screen bg-black relative">
+            {/* Botón hamburguesa solo en móviles, ahora dentro de la barra superior */}
             {/* Barra lateral */}
-            <aside className="w-64 bg-gray-900 border-r-2 border-green-600 flex flex-col py-8 px-4 space-y-4">
+            <aside
+                className={`fixed md:static top-0 left-0 z-20 h-full w-64 bg-gray-900 border-r-2 border-green-600 flex flex-col py-8 px-4 space-y-4 transition-transform duration-300
+                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+                style={{ minHeight: '100vh' }}
+            >
                 <div className="flex items-center gap-2 mb-8">
                     <span className="text-2xl font-extrabold text-green-600">🏋️‍♂️ GymApp</span>
                 </div>
@@ -45,7 +79,7 @@ export default function Dashboard() {
                     {menuItems.map(item => (
                         <button
                             key={item.key}
-                            onClick={() => setActive(item.key)}
+                            onClick={() => { setActive(item.key); setSidebarOpen(false); }}
                             className={`flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-150
                 ${active === item.key ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
                         >
@@ -53,52 +87,108 @@ export default function Dashboard() {
                             {item.label}
                         </button>
                     ))}
+                    {user?.isAdmin && (
+                        <>
+                            <div className="my-4 border-t border-green-700" />
+                            <div className="px-4 py-1 text-green-500 font-bold uppercase text-xs tracking-widest mb-1">Admin</div>
+                            <button
+                                onClick={() => { setActive("agregar-ejercicio"); setSidebarOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-150
+                    ${active === "agregar-ejercicio" ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
+                            >
+                                <span>➕</span>
+                                Agregar ejercicio
+                            </button>
+                        </>
+                    )}
                 </nav>
             </aside>
 
+            {/* Overlay para cerrar menú en móviles */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Contenido principal */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 {/* Barra superior */}
-                <header className="h-20 bg-gray-900 border-b-2 border-green-600 flex items-center justify-between px-8">
-                    <div className="text-xl font-bold text-white">
-                        {menuItems.find(item => item.key === active)?.label}
+                <header className="h-20 bg-gray-900 border-b-2 border-green-600 flex items-center justify-between px-4 md:px-8">
+                    <div className="flex items-center gap-3">
+                        {/* Botón hamburguesa solo en móviles */}
+                        <button
+                            className="md:hidden bg-green-600 hover:bg-green-800 text-white p-3 rounded-lg shadow-lg focus:outline-none"
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            aria-label="Abrir menú"
+                        >
+                            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
+                                <rect y="4" width="24" height="2" rx="1" fill="currentColor" />
+                                <rect y="11" width="24" height="2" rx="1" fill="currentColor" />
+                                <rect y="18" width="24" height="2" rx="1" fill="currentColor" />
+                            </svg>
+                        </button>
+                        <span className="text-lg md:text-xl font-bold text-white truncate">
+                            {menuItems.find(item => item.key === active)?.label}
+                            {active === "agregar-ejercicio" && "Agregar ejercicio"}
+                        </span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         <span className="text-green-600 font-semibold flex items-center gap-2">
-                            {user.isAdmin && (
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="inline-block align-middle mr-1">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="#FFD700" stroke="#B8860B" strokeWidth="1" />
-                                </svg>
+                            {/* Avatar inline, clickable to go to perfil */}
+                            <span
+                                className="inline-block cursor-pointer"
+                                title="Ir a perfil"
+                                onClick={() => setActive('perfil')}
+                            >
+                                {user.avatarUrl ? (
+                                    <img
+                                        src={user.avatarUrl.startsWith('http') ? user.avatarUrl : (typeof window !== 'undefined' ? window.location.origin + user.avatarUrl : user.avatarUrl)}
+                                        alt="Avatar"
+                                        className="inline-block w-8 h-8 rounded-full object-cover border-2 border-green-500 ml-2 mr-1 align-middle bg-gray-800 transition-transform hover:scale-105"
+                                        style={{ verticalAlign: 'middle' }}
+                                    />
+                                ) : (
+                                    <span className="inline-block w-8 h-8 rounded-full bg-gray-800 border-2 border-green-500 ml-2 mr-1 align-middle transition-transform hover:scale-105"></span>
+                                )}
+                            </span>
+                            {user.isAdmin ? (
+                                <span className="underline decoration-yellow-400 decoration-2 underline-offset-4 text-yellow-300">{user.name}</span>
+                            ) : (
+                                user.name
                             )}
-                            Gymrat: {user.name}
                         </span>
                         <button
                             onClick={() => {
                                 localStorage.removeItem("token");
                                 router.replace("/");
                             }}
-                            className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-4 rounded transition-colors duration-150"
+                            className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-3 md:px-4 text-sm md:text-base rounded transition-colors duration-150"
                         >
                             Cerrar sesión
                         </button>
                     </div>
                 </header>
                 {/* Contenido dinámico */}
-                <main className="flex-1 p-8 bg-black">
+                <main className="flex-1 p-2 md:p-8 bg-black min-w-0">
                     {active === "inicio" && (
-                        <div className="text-3xl font-extrabold text-green-600">¡Bienvenido al Dashboard!</div>
+                        <div className="text-2xl md:text-3xl font-extrabold text-green-600">¡Bienvenido al Dashboard!</div>
                     )}
-                    {active === "perfil" && (
-                        <div className="text-xl text-gray-300">Aquí irá el perfil del usuario.</div>
+                    {active === "perfil" && user && (
+                        <ProfileSection user={user} userData={userData} setUserData={setUserData} setUser={setUser} />
                     )}
                     {active === "rutinas" && (
-                        <div className="text-xl text-green-600">Aquí irán las rutinas de entrenamiento.</div>
+                        <div className="text-lg md:text-xl text-green-600">Aquí irán las rutinas de entrenamiento.</div>
                     )}
                     {active === "progreso" && (
-                        <div className="text-xl text-gray-300">Aquí verás tu progreso.</div>
+                        <div className="text-lg md:text-xl text-gray-300">Aquí verás tu progreso.</div>
                     )}
                     {active === "ajustes" && (
-                        <div className="text-xl text-green-600">Configuración y ajustes.</div>
+                        <div className="text-lg md:text-xl text-green-600">Configuración y ajustes.</div>
+                    )}
+                    {active === "agregar-ejercicio" && user?.isAdmin && (
+                        <div className="text-lg md:text-xl text-green-600">Aquí podrás agregar un nuevo ejercicio (solo admin).</div>
                     )}
                 </main>
             </div>
