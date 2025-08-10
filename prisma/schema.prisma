@@ -37,12 +37,28 @@ model UserData {
 model Machine {
   id         Int      @id @default(autoincrement())
   name       String
-  type       String
-  mainMuscle String
+  imageUrl   String?
+  description String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   progresses Progress[]           // Relación inversa con Progress
   routineExercises RoutineExercise[] // Relación inversa con RoutineExercise
+  muscles    Muscle[] @relation("MachineMuscles")
+  type       MachineType @relation(fields: [typeId], references: [id])
+  typeId     Int
+}
+
+model MachineType {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  description String?
+  machines   Machine[]
+}
+
+model Muscle {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  machines   Machine[] @relation("MachineMuscles")
 }
 
 model Progress {

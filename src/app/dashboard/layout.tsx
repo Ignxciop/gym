@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import dynamic from "next/dynamic";
 const PerfilPage = dynamic(() => import("@/app/dashboard/perfil/page"), { ssr: false }) as React.ComponentType<{ email: string }>;
+import AddMachineForm from "@/app/dashboard/components/AddMachineForm";
 
 
 const menuItems = [
@@ -78,9 +79,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } else if (active === "ajustes") {
         content = <div className="text-lg md:text-xl text-green-600">Configuración y ajustes.</div>;
     } else if (active === "agregar-ejercicio" && user?.isAdmin) {
-        content = <div className="text-lg md:text-xl text-green-600">Aquí podrás agregar un nuevo ejercicio (solo admin).</div>;
+        content = <AddMachineForm />;
     } else {
-        content = <div className="text-center text-green-400 text-xl font-bold mt-20">Selecciona una sección del menú</div>;
+        content = (<div className="text-center text-green-400 text-xl font-bold mt-20">Selecciona una sección del menú</div>);
     }
 
     return (
