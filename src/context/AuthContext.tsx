@@ -29,9 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setUser(null));
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutFn();
     setUser(null);
-    logoutFn();
   };
 
   return (

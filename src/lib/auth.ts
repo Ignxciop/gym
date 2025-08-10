@@ -24,8 +24,7 @@ export async function fetchUserData() {
   return await res.json();
 }
 
-export function logout() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-  }
+export async function logout() {
+  // Elimina la cookie del token en el backend
+  await fetch("/api/logout", { method: "POST" });
 }
