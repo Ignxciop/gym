@@ -34,20 +34,29 @@ export default function RegisterPage() {
     const onSubmit = async (data: RegisterForm) => {
         setError("");
         setSuccess("");
-        const res = await fetch("/api/register", {
-            method: "POST",
-            body: JSON.stringify(data),
-        });
-        const json = await res.json();
-        if (res.ok) {
-            setSuccess("¡Registro exitoso! Ahora puedes iniciar sesión.");
-            setTimeout(() => router.push("/"), 1500);
-        } else {
-            if (json.message && json.message.toLowerCase().includes("correo")) {
-                setError("Este correo ya está registrado. Intenta con otro o inicia sesión.");
+        try {
+            const res = await fetch("/api/register", {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+            const json = await res.json();
+            if (res.ok) {
+                setSuccess("¡Registro exitoso! Ahora puedes iniciar sesión.");
+                setTimeout(() => router.push("/login"), 1500);
             } else {
-                setError(json.message || "Error al registrar usuario");
+                // Mensajes amigables según el error
+                if (json.message?.toLowerCase().includes("correo")) {
+                    setError("Este correo ya está registrado. ¿Quieres iniciar sesión?");
+                } else if (json.message?.toLowerCase().includes("contraseña")) {
+                    setError("La contraseña no cumple los requisitos. Debe tener al menos 6 caracteres.");
+                } else if (json.message?.toLowerCase().includes("nombre")) {
+                    setError("El nombre es muy corto. Ingresa tu nombre completo.");
+                } else {
+                    setError(json.message || "Error al registrar usuario. Verifica tus datos e intenta de nuevo.");
+                }
             }
+        } catch {
+            setError("No se pudo conectar con el servidor. Intenta más tarde.");
         }
     };
 
@@ -70,6 +79,11 @@ export default function RegisterPage() {
                 {error && (
                     <div className="bg-green-950 border-2 border-green-600 text-green-400 px-4 py-2 rounded-lg text-center mb-2 animate-shake">
                         {error}
+                        {error.includes("iniciar sesión") && (
+                            <div className="mt-2">
+                                <a href="/login" className="underline text-green-400">Ir a login</a>
+                            </div>
+                        )}
                     </div>
                 )}
                 {success && <p className="text-green-600 text-sm text-center animate-fade-in">{success}</p>}
@@ -136,7 +150,7 @@ export default function RegisterPage() {
                     Registrarme
                 </button>
                 <div className="text-center pt-2">
-                    <span className="text-sm text-gray-300">¿Ya tienes cuenta? <a href="/" className="text-green-600 font-semibold hover:underline">Inicia sesión</a></span>
+                    <span className="text-sm text-gray-300">¿Ya tienes cuenta? <a href="/login" className="text-green-600 font-semibold hover:underline">Inicia sesión</a></span>
                 </div>
             </form>
             <style jsx global>{`

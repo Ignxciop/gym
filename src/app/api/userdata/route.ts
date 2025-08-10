@@ -4,6 +4,8 @@
 
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 import { writeFile } from "fs/promises";
 import path from "path";
 const prisma = new PrismaClient();
@@ -22,12 +24,15 @@ function calculateAge(birthDate: Date): number {
 
 // GET: Obtener datos físicos
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email");
-  if (!email) {
-    return NextResponse.json({ error: "Email requerido" }, { status: 400 });
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
   try {
+    const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const email = decoded.email;
     const user = await prisma.user.findUnique({
       where: { email },
       include: { userData: { orderBy: { date: "desc" } } },
@@ -47,7 +52,7 @@ export async function GET(request: Request) {
     const userDataWithAge = user.userData.map((ud: any) => ({ ...ud, age }));
     return NextResponse.json(userDataWithAge);
   } catch (e) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
 }
 

@@ -2,14 +2,19 @@
 // Endpoint API para obtener los datos de un usuario por email (incluyendo birthDate actualizado)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email");
-  if (!email) {
-    return NextResponse.json({ error: "Email requerido" }, { status: 400 });
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
   try {
+    const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const email = decoded.email;
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -26,6 +31,6 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(user);
   } catch (e) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
 }

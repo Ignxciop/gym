@@ -53,5 +53,14 @@ export async function POST(req: Request) {
         { expiresIn: "7d" }
     );
 
-    return NextResponse.json({ message: "Login exitoso", token });
+    // Set cookie httpOnly
+    const response = NextResponse.json({ message: "Login exitoso" });
+    response.cookies.set("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7 // 7 días
+    });
+    return response;
 }

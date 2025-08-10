@@ -22,12 +22,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Import AuthProvider here
+  // ...existing code...
+  const { AuthProvider } = require("@/context/AuthContext");
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
