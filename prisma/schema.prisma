@@ -96,7 +96,17 @@ model RoutineExercise {
   restTime   Int
   order      Int
   notes      String?
+  routineSets RoutineSet[] // Relación con los sets de la rutina
   exerciseLogs ExerciseLog[]    // Relación inversa con ExerciseLog
+}
+
+model RoutineSet {
+  id                Int      @id @default(autoincrement())
+  routineExercise   RoutineExercise @relation(fields: [routineExerciseId], references: [id])
+  routineExerciseId Int
+  setNumber         Int
+  repetitions       Int
+  weight            Float
 }
 
 model ExerciseLog {

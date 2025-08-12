@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { fetchUserInfo, fetchUserData } from "@/lib/auth";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import dynamic from "next/dynamic";
 const PerfilPage = dynamic(() => import("@/app/dashboard/perfil/page"), { ssr: false }) as React.ComponentType<{ email: string }>;
@@ -31,26 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // user and setUser now come from context
     const [userData, setUserData] = useState<any[]>([]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [active, setActive] = useState("inicio");
-
-    // Sincroniza el estado 'active' con la URL
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const path = window.location.pathname.split("/")[2] || "inicio";
-            setActive(path);
-        }
-    }, []);
-
-    // Actualiza la URL cuando cambia el estado 'active'
-    const handleSectionChange = (key: string) => {
-        setActive(key);
-        // Cambia la URL sin recargar ni navegar fuera de la página
-        const newPath = `/dashboard/${key === "inicio" ? "" : key}`;
-        if (typeof window !== "undefined" && window.location.pathname !== newPath) {
-            window.history.pushState({}, '', newPath);
-        }
-        setSidebarOpen(false);
-    };
+    // Elimina navegación por estado local, usa rutas
 
     useEffect(() => {
         fetchUserInfo()
@@ -66,23 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     if (!user) return null;
 
-    // Renderizar contenido dinámico según el estado 'active'
-    let content = null;
-    if (active === "inicio") {
-        content = children;
-    } else if (active === "perfil") {
-        content = <PerfilPage email={user.email || ''} />;
-    } else if (active === "rutinas") {
-        content = <div className="text-lg md:text-xl text-green-600">Aquí irán las rutinas de entrenamiento.</div>;
-    } else if (active === "progreso") {
-        content = <div className="text-lg md:text-xl text-gray-300">Aquí verás tu progreso.</div>;
-    } else if (active === "ajustes") {
-        content = <div className="text-lg md:text-xl text-green-600">Configuración y ajustes.</div>;
-    } else if (active === "agregar-ejercicio" && user?.isAdmin) {
-        content = <AddMachineForm />;
-    } else {
-        content = (<div className="text-center text-green-400 text-xl font-bold mt-20">Selecciona una sección del menú</div>);
-    }
+    // Elimina renderizado condicional, usa children
 
     return (
         <div className="flex min-h-screen bg-black relative">
@@ -98,28 +64,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <nav className="flex flex-col gap-2">
                     {menuItems.map(item => (
-                        <button
+                        <Link
                             key={item.key}
-                            onClick={() => handleSectionChange(item.key)}
+                            href={`/dashboard/${item.key === "inicio" ? "" : item.key}`}
                             className={`flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-150
-                ${active === item.key ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
+                ${pathname === `/dashboard/${item.key === "inicio" ? "" : item.key}` ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
+                            onClick={() => setSidebarOpen(false)}
                         >
                             <span>{item.icon}</span>
                             {item.label}
-                        </button>
+                        </Link>
                     ))}
                     {user?.isAdmin && (
                         <>
                             <div className="my-4 border-t border-green-700" />
                             <div className="px-4 py-1 text-green-500 font-bold uppercase text-xs tracking-widest mb-1">Admin</div>
-                            <button
-                                onClick={() => handleSectionChange("agregar-ejercicio")}
+                            <Link
+                                href="/dashboard/agregar-ejercicio"
                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-150
-                    ${active === "agregar-ejercicio" ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
+                    ${pathname === "/dashboard/agregar-ejercicio" ? "bg-green-600 text-white" : "text-gray-300 hover:bg-green-900 hover:text-green-400"}`}
+                                onClick={() => setSidebarOpen(false)}
                             >
                                 <span>➕</span>
                                 Agregar ejercicio
-                            </button>
+                            </Link>
                         </>
                     )}
                 </nav>
@@ -151,8 +119,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             </svg>
                         </button>
                         <span className="text-lg md:text-xl font-bold text-white truncate">
-                            {menuItems.find(item => item.key === active)?.label}
-                            {active === "agregar-ejercicio" && "Agregar ejercicio"}
+                            {(() => {
+                              const current = menuItems.find(item => pathname === `/dashboard/${item.key === "inicio" ? "" : item.key}`);
+                              return current ? current.label : "";
+                            })()}
+                            {pathname === "/dashboard/agregar-ejercicio" && "Agregar ejercicio"}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
@@ -161,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <span
                                 className="inline-block cursor-pointer"
                                 title="Ir a perfil"
-                                onClick={() => handleSectionChange("perfil")}
+                                onClick={() => router.push("/dashboard/perfil")}
                             >
                                 {user.avatarUrl ? (
                                     <img
@@ -193,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </header>
                 {/* Contenido dinámico */}
                 <main className="flex-1 p-2 md:p-8 bg-black min-w-0">
-                    {content}
+                    {children}
                 </main>
             </div>
         </div>

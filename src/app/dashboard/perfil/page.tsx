@@ -289,7 +289,11 @@ const inputNumberNoArrows = `
 
 // Aquí va la función principal del perfil, sin props, que maneja el estado y la lógica internamente
 
-function PerfilPage({ email }: { email: string }) {
+import { useAuth } from "@/context/AuthContext";
+
+function PerfilPage() {
+  const { user: authUser } = useAuth();
+  const email = authUser?.email || "";
   // Estado local para user y userData
   const [user, setUser] = useState<any>({ name: '', email: '', birthDate: null, avatarUrl: '', gender: '' });
   const [userData, setUserData] = useState<any[]>([]);
